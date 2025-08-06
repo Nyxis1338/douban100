@@ -1,3 +1,9 @@
+-- 创建数据库（如果不存在）
+CREATE DATABASE IF NOT EXISTS crawler_db;
+
+-- 使用数据库
+USE crawler_db;
+
 CREATE TABLE IF NOT EXISTS douban_top100 (
     id INT PRIMARY KEY AUTO_INCREMENT,
     title VARCHAR(100) NOT NULL,
