@@ -31,7 +31,7 @@ def douban_top100():
             director = info.select_one('p').text.split('\n')[1].strip().replace('导演: ', '').split(' ')[0]
             year = info.select_one('.bd p').text.split('/')[-2].strip()
             rating = item.select_one('.rating_num').text.strip()
-            quote = item.select_one('.quote span.inq')
+            quote = item.select_one('.quote span')
             quote = quote.text.strip() if quote else ''  # 有些电影没有短评 # strip() 去掉前后空格
             movies.append({
                 'title': title,
