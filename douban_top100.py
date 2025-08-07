@@ -4,16 +4,25 @@ from mysqlhelper import MySQLHelper
 import logging
 
 # 配置日志
-# 设置日志记录器
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('douban_top100_search.log'),
-        logging.StreamHandler()
-    ]
-)
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+# 防止重复添加 handler
+# mysqlhelper.py 中可能已经配置了日志
+if not logger.handlers:
+    # 文件日志
+    file_handler = logging.FileHandler('douban_top100_search.log', encoding='utf-8')
+    file_handler.setLevel(logging.INFO)
+    file_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    file_handler.setFormatter(file_formatter)
+    logger.addHandler(file_handler)
+
+    # 控制台日志
+    stream_handler = logging.StreamHandler()
+    stream_handler.setLevel(logging.INFO)
+    stream_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    stream_handler.setFormatter(stream_formatter)
+    logger.addHandler(stream_handler)
 
 def douban_top100():
     movies = []
@@ -28,15 +37,17 @@ def douban_top100():
         for item in items:
             title = item.select_one('.title').text.strip()
             info = item.select_one('.info')
-            director = info.select_one('p').text.split('\n')[1].strip().replace('导演: ', '').split(' ')[0]
-            # 影片时间 格式不统一，是第二行的前4位截取，需要修改
-            # ---
-            year = info.select_one('.bd p').text.split('/')[-3].strip()[-4:]  # 取最后一个/前的年份部分，并取后4位
-            year = year if year.isdigit() else '0'  # 如果年份不是数字，则设为0
+
+            # 影片介绍是三行文本，可能包含导演、主演、上映年份等信息
+            # 这里只取导演和上映年份,分别在第二行和第三行
+                
+            info_text = info.select_one('.bd p').text.splitlines()
+            director = info_text[1].strip().replace('导演: ', '').split(' ')[0]  # 取第一行的导演信息
+            year = info_text[2].split('/')[0].strip()  # 取第二行的年份信息
             if not year.isdigit():
-                logger.warning(f'获取到非数字年份: {year}，将其设为0')
+                logger.warning(f'获取到非数字年份: {year},将其设为0')
                 year = '0'
-            # ---
+
             rating = item.select_one('.rating_num').text.strip()
             quote = item.select_one('.quote span')
             quote = quote.text.strip() if quote else ''  # 有些电影没有短评 # strip() 去掉前后空格
@@ -71,11 +82,14 @@ def save_to_db(movies):
     db_helper = MySQLHelper(**db_config)
     affected = db_helper.batch_execute(insert_sql, params_list)
     print(f"成功插入 {affected} 条记录")
+    logger.info(f'成功插入 {affected} 条记录到数据库')
     db_helper.close()
 
 
 import matplotlib.pyplot as plt
 import seaborn as sns  # Seaborn是一个建立在Matplotlib之上的Python数据可视化库
+# 设置字体为FangSong（仿宋）
+plt.rcParams['font.sans-serif'] = ['FangSong']
 
 def visualize(movies):
     # 评分分布
@@ -98,6 +112,11 @@ def visualize(movies):
     plt.show()
 
     # 导演出现次数
+    # 使用字典统计每个导演的出现次数
+    # 然后按次数排序，取前10
+    # 最后用Seaborn绘制柱状图
+    # 下方代码中 sns 是问的AI 不知道是个啥
+
     directors = [m['director'] for m in movies]
     plt.figure(figsize=(10, 4))
     top_directors = sns.countplot(x=directors, order=[d for d, _ in sorted({d: directors.count(d) for d in set(directors)}.items(), key=lambda x: x[1], reverse=True)[:10]])
@@ -109,5 +128,6 @@ def visualize(movies):
 
 if __name__ == '__main__':
     movies = douban_top100()
-    save_to_db(movies)
+    # save_to_db(movies)
     visualize(movies)  # 可视化数据
+    logger.info('程序执行完毕') 
