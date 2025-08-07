@@ -79,7 +79,8 @@ def save_to_db(movies):
         for m in movies
     ]
 
-    db_helper = MySQLHelper(**db_config)
+    # 使用 MySQLHelper 批量插入数据
+    db_helper = MySQLHelper(**db_config)  #两个星号表示将字典中的键值对作为参数传递
     affected = db_helper.batch_execute(insert_sql, params_list)
 
     logger.info(f'成功插入 {affected} 条记录到数据库')
@@ -89,6 +90,7 @@ def save_to_db(movies):
 import matplotlib.pyplot as plt
 import seaborn as sns  # Seaborn是一个建立在Matplotlib之上的Python数据可视化库
 # 设置字体为FangSong（仿宋）
+# plt只能显示英文和数字，中文需要设置字体
 plt.rcParams['font.sans-serif'] = ['FangSong']
 
 def visualize(movies):
@@ -128,6 +130,6 @@ def visualize(movies):
 
 if __name__ == '__main__':
     movies = douban_top100()
-    # save_to_db(movies)
+    save_to_db(movies)
     visualize(movies)  # 可视化数据
     logger.info('程序执行完毕') 
