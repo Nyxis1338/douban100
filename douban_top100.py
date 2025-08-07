@@ -81,7 +81,7 @@ def save_to_db(movies):
 
     db_helper = MySQLHelper(**db_config)
     affected = db_helper.batch_execute(insert_sql, params_list)
-    print(f"成功插入 {affected} 条记录")
+
     logger.info(f'成功插入 {affected} 条记录到数据库')
     db_helper.close()
 
