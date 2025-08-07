@@ -29,7 +29,14 @@ def douban_top100():
             title = item.select_one('.title').text.strip()
             info = item.select_one('.info')
             director = info.select_one('p').text.split('\n')[1].strip().replace('导演: ', '').split(' ')[0]
-            year = info.select_one('.bd p').text.split('/')[-2].strip()
+            # 影片时间 格式不统一，是第二行的前4位截取，需要修改
+            # ---
+            year = info.select_one('.bd p').text.split('/')[-3].strip()[-4:]  # 取最后一个/前的年份部分，并取后4位
+            year = year if year.isdigit() else '0'  # 如果年份不是数字，则设为0
+            if not year.isdigit():
+                logger.warning(f'获取到非数字年份: {year}，将其设为0')
+                year = '0'
+            # ---
             rating = item.select_one('.rating_num').text.strip()
             quote = item.select_one('.quote span')
             quote = quote.text.strip() if quote else ''  # 有些电影没有短评 # strip() 去掉前后空格
@@ -49,7 +56,7 @@ def save_to_db(movies):
         'host': 'localhost',
         'user': 'root',
         'password': 'root',  # 替换为你的密码
-        'database': 'douban_top100',
+        'database': 'crawler_db',
         'port': 3306
     }
     insert_sql = """
